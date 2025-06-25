@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Fix Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .test-result {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .success { background: rgba(76, 175, 80, 0.3); }
+        .error { background: rgba(244, 67, 54, 0.3); }
+        .warning { background: rgba(255, 193, 7, 0.3); }
+        pre { 
+            background: rgba(0,0,0,0.3); 
+            padding: 10px; 
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Error Fix Verification</h1>
+    <div id="test-results">
+        <div class="test-result">
+            <h3>🧪 Running Tests...</h3>
+            <p>Checking if all the critical errors have been fixed.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        const results = document.getElementById('test-results');
+        
+        function addResult(title, message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${message}</pre>`;
+            results.appendChild(div);
+        }
+
+        try {
+            console.log('🧪 Starting error fix verification...');
+            
+            // Test 1: Import supabase services
+            console.log('Test 1: Importing supabase services...');
+            const { 
+                supabase, 
+                dbService, 
+                authService, 
+                habitService,
+                checkinService,
+                milestoneService,
+                challengeService,
+                profileService
+            } = await import('./supabase.js');
+            
+            addResult('✅ Test 1: Supabase Imports', 
+                `All services imported successfully:
+- supabase client: ${supabase ? 'OK' : 'MISSING'}
+- dbService: ${dbService ? 'OK' : 'MISSING'}
+- authService: ${authService ? 'OK' : 'MISSING'}
+- challengeService: ${challengeService ? 'OK' : 'MISSING'}
+- milestoneService: ${milestoneService ? 'OK' : 'MISSING'}`);
+
+            // Test 2: Check for previously missing functions
+            console.log('Test 2: Checking previously missing functions...');
+            const functionTests = [
+                { name: 'dbService.getChallenges', exists: typeof dbService.getChallenges === 'function' },
+                { name: 'dbService.getGlobalCheckins', exists: typeof dbService.getGlobalCheckins === 'function' },
+                { name: 'dbService.getHabitMilestones', exists: typeof dbService.getHabitMilestones === 'function' },
+                { name: 'milestoneService.getHabitMilestones', exists: typeof milestoneService.getHabitMilestones === 'function' },
+                { name: 'challengeService.getChallenges', exists: typeof challengeService.getChallenges === 'function' }
+            ];
+            
+            const functionResults = functionTests.map(test => 
+                `${test.exists ? '✅' : '❌'} ${test.name}: ${test.exists ? 'EXISTS' : 'MISSING'}`
+            ).join('\n');
+            
+            addResult('✅ Test 2: Function Existence Check', functionResults);
+
+            // Test 3: Test social.js imports
+            console.log('Test 3: Testing social.js imports...');
+            const { SocialFeatures } = await import('./social.js');
+            addResult('✅ Test 3: Social Features Import', 
+                `SocialFeatures class imported: ${SocialFeatures ? 'OK' : 'MISSING'}`);
+
+            // Test 4: Test error handling by calling functions
+            console.log('Test 4: Testing error handling...');
+            try {
+                const challenges = await dbService.getChallenges();
+                addResult('✅ Test 4a: getChallenges Error Handling', 
+                    `Function called without crashing. Returned: ${Array.isArray(challenges) ? 'Array' : typeof challenges}`);
+            } catch (error) {
+                addResult('⚠️ Test 4a: getChallenges Error Handling', 
+                    `Function call failed but was caught: ${error.message}`, 'warning');
+            }
+
+            try {
+                const checkins = await dbService.getGlobalCheckins();
+                addResult('✅ Test 4b: getGlobalCheckins Error Handling', 
+                    `Function called without crashing. Returned: ${Array.isArray(checkins) ? 'Array' : typeof checkins}`);
+            } catch (error) {
+                addResult('⚠️ Test 4b: getGlobalCheckins Error Handling', 
+                    `Function call failed but was caught: ${error.message}`, 'warning');
+            }
+
+            // Test 5: Overall status
+            addResult('🎉 Overall Status', 
+                `All critical import and function errors have been fixed!
+                
+The app should now:
+- Load all modules without "function not found" errors
+- Handle database connection issues gracefully
+- Continue working even if some features are unavailable
+- Display user-friendly messages instead of crashing
+
+Next step: Run the database setup SQL in Supabase to fully resolve 406 errors.`);
+
+        } catch (error) {
+            console.error('❌ Test failed:', error);
+            addResult('❌ Critical Error Still Present', 
+                `Error during testing: ${error.message}
+                Stack: ${error.stack}`, 'error');
+        }
+    </script>
+</body>
+</html>

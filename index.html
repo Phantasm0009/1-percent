@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily 1% - Compound Your Growth</title>
+    <meta name="description" content="Track your habits and visualize the compound effect of 1% daily improvements">
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Import new modules -->
+    <script type="module" src="supabase.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="visualization.js"></script>
+    <script type="module" src="social.js"></script>
+    <script type="module" src="gamification.js"></script>
+    <script type="module" src="script.js"></script>
+</head>
+<body>
+    <!-- Onboarding Screen -->
+    <div id="onboarding" class="screen">
+        <div class="container">
+            <h1 class="logo">Daily 1%</h1>
+            <p class="tagline">Compound your growth, one day at a time</p>
+            
+            <div class="onboarding-content">
+                <h2>What's your 1% today?</h2>
+                <input type="text" id="habitInput" placeholder="e.g., Meditation, Reading, Exercise..." maxlength="50">
+                
+                <div class="comparison-preview">
+                    <div class="comparison-item">
+                        <span class="day">Day 1</span>
+                        <span class="improvement">1.00%</span>
+                        <span class="label">better</span>
+                    </div>
+                    <div class="vs">vs</div>
+                    <div class="comparison-item highlight">
+                        <span class="day">Day 365</span>
+                        <span class="improvement">3,678%</span>
+                        <span class="label">better</span>
+                    </div>
+                </div>
+                
+                <button id="startJourney" class="primary-btn" disabled>Start My Journey</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="screen hidden">
+        <header>
+            <h1 class="logo">Daily 1%</h1>
+            <div class="habit-display">
+                <span id="currentHabit"></span>
+                <button id="changeHabit" class="icon-btn"><i class="fas fa-edit"></i></button>
+            </div>
+            
+            <!-- User Menu -->
+            <div class="user-menu">
+                <button id="userMenuBtn" class="user-avatar">
+                    <img id="userAvatar" src="" alt="User">
+                    <span id="userName">User</span>
+                </button>
+                <div id="userDropdown" class="user-dropdown hidden">
+                    <a href="#" id="profileBtn"><i class="fas fa-user"></i> Profile</a>
+                    <a href="#" id="settingsBtn"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="#" id="shareBtn"><i class="fas fa-share"></i> Share Progress</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" id="signOutBtn"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+                </div>
+            </div>
+        </header>
+
+        <main class="dashboard-content">
+            <!-- Daily Check-in -->
+            <section class="daily-checkin">
+                <div class="streak-display">
+                    <span class="streak-number" id="streakNumber">0</span>
+                    <span class="streak-label">day streak</span>
+                    <div class="reliability-score">
+                        <span class="reliability-label">Reliability</span>
+                        <span class="reliability-percent" id="reliabilityScore">0%</span>
+                    </div>
+                </div>
+                
+                <button id="dailyCheckbox" class="daily-btn">
+                    <i class="fas fa-check"></i>
+                    <span>I did my 1% today</span>
+                </button>
+                
+                <div class="improvement-display">
+                    <span class="improvement-text">You're</span>
+                    <span class="improvement-percent" id="improvementPercent">0.00%</span>
+                    <span class="improvement-text">better than Day 1</span>
+                </div>
+                
+                <!-- Avatar Progression -->
+                <div class="avatar-progression">
+                    <div class="avatar-container">
+                        <div id="progressAvatar" class="progress-avatar"></div>
+                        <div class="level-badge" id="levelBadge">Novice</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Growth Chart -->
+            <section class="chart-section">
+                <div class="chart-header">
+                    <h3>Your Growth Journey</h3>
+                    <div class="chart-controls">
+                        <button id="viewMode1" class="chart-btn active">30 Days</button>
+                        <button id="viewMode2" class="chart-btn">1 Year</button>
+                        <button id="viewMode3" class="chart-btn">What If</button>
+                        <button id="timelineBtn" class="chart-btn">Timeline</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+                
+                <!-- Interactive Timeline -->
+                <div id="timelineSlider" class="timeline-slider hidden">
+                    <div class="timeline-header">
+                        <h4>Interactive Timeline</h4>
+                        <span id="timelineDay">Day 1</span>
+                    </div>
+                    <input type="range" id="daySlider" min="1" max="365" value="1" class="slider">
+                    <div class="timeline-stats">
+                        <div class="stat">
+                            <span class="stat-label">Growth</span>
+                            <span class="stat-value" id="timelineGrowth">0%</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Potential</span>
+                            <span class="stat-value" id="timelinePotential">3,678%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Milestones -->
+            <section class="milestones">
+                <h3>Milestones</h3>
+                <div class="milestone-grid">
+                    <div class="milestone" data-days="7">
+                        <div class="milestone-icon">🔥</div>
+                        <div class="milestone-info">
+                            <span class="milestone-days">7 Days</span>
+                            <span class="milestone-improvement">+7.21%</span>
+                        </div>
+                        <div class="milestone-status" id="milestone7">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                    <div class="milestone" data-days="21">
+                        <div class="milestone-icon">⚡</div>
+                        <div class="milestone-info">
+                            <span class="milestone-days">21 Days</span>
+                            <span class="milestone-improvement">+23.4%</span>
+                        </div>
+                        <div class="milestone-status" id="milestone21">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                    <div class="milestone" data-days="100">
+                        <div class="milestone-icon">🚀</div>
+                        <div class="milestone-info">
+                            <span class="milestone-days">100 Days</span>
+                            <span class="milestone-improvement">+170%</span>
+                        </div>
+                        <div class="milestone-status" id="milestone100">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                    <div class="milestone" data-days="365">
+                        <div class="milestone-icon">👑</div>
+                        <div class="milestone-info">
+                            <span class="milestone-days">365 Days</span>
+                            <span class="milestone-improvement">+3,678%</span>
+                        </div>
+                        <div class="milestone-status" id="milestone365">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Achievements -->
+            <section class="achievements">
+                <h3>Achievements</h3>
+                <div class="achievement-grid" id="achievementGrid">
+                    <!-- Achievements will be dynamically populated -->
+                </div>
+            </section>
+            
+            <!-- Social Features -->
+            <section class="social-features">
+                <div class="social-tabs">
+                    <button class="social-tab active" data-tab="challenges">Challenges</button>
+                    <button class="social-tab" data-tab="leaderboard">Leaderboard</button>
+                    <button class="social-tab" data-tab="community">Community</button>
+                </div>
+                
+                <div class="social-content">
+                    <div id="challengesTab" class="social-panel active">
+                        <div class="challenges-header">
+                            <h4>Active Challenges</h4>
+                            <button id="createChallengeBtn" class="create-btn">Create Challenge</button>
+                        </div>
+                        <div id="challengesList" class="challenges-list">
+                            <!-- Challenges will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div id="leaderboardTab" class="social-panel">
+                        <div class="leaderboard-filters">
+                            <button class="filter-btn active" data-filter="weekly">This Week</button>
+                            <button class="filter-btn" data-filter="monthly">This Month</button>
+                            <button class="filter-btn" data-filter="alltime">All Time</button>
+                        </div>
+                        <div id="leaderboardList" class="leaderboard-list">
+                            <!-- Leaderboard will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div id="communityTab" class="social-panel">
+                        <div class="live-map" id="liveMap">
+                            <h4>Live Activity Map</h4>
+                            <div class="map-container">
+                                <!-- Live activity dots will be shown here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+                        </div>
+                    </div>
+                    <div class="milestone" data-days="21">
+                        <div class="milestone-icon">💪</div>
+                        <div class="milestone-info">
+                            <span class="milestone-days">21 Days</span>
+                            <span class="milestone-improvement">+23.36%</span>
+                        </div>
+                    </div>
+                    <div class="milestone" data-days="100">
+                        <div class="milestone-icon">🚀</div>
+                        <div class="milestone-info">
+                            <span class="milestone-days">100 Days</span>
+                            <span class="milestone-improvement">+170.48%</span>
+                        </div>
+                    </div>
+                    <div class="milestone" data-days="365">
+                        <div class="milestone-icon">👑</div>
+                        <div class="milestone-info">
+                            <span class="milestone-days">1 Year</span>
+                            <span class="milestone-improvement">+3,678%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Share Section -->
+            <section class="share-section">
+                <button id="shareProgress" class="share-btn">
+                    <i class="fas fa-share-alt"></i>
+                    Share My Progress
+                </button>
+                
+                <!-- Keyboard Shortcuts Info -->
+                <div class="shortcuts-info">
+                    <small>💡 Tip: Press <kbd>Space</kbd> for quick check-in, <kbd>Esc</kbd> to close modals</small>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- What If Modal -->
+    <div id="whatIfModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>What If Scenarios</h3>
+                <button id="closeModal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="scenario-controls">
+                    <label>
+                        Consistency Rate: <span id="consistencyValue">80%</span>
+                        <input type="range" id="consistencySlider" min="50" max="100" value="80">
+                    </label>
+                    <label>
+                        Daily Improvement: <span id="improvementValue">1.0%</span>
+                        <input type="range" id="improvementSlider" min="0.5" max="2.0" step="0.1" value="1.0">
+                    </label>
+                </div>
+                <div class="scenario-results">
+                    <div class="scenario-item">
+                        <span class="scenario-period">1 Year</span>
+                        <span class="scenario-growth" id="oneYearGrowth">+2,942%</span>
+                    </div>
+                    <div class="scenario-item">
+                        <span class="scenario-period">5 Years</span>
+                        <span class="scenario-growth" id="fiveYearGrowth">+145,673,061%</span>
+                    </div>
+                </div>
+        </main>
+        
+        <!-- Settings Panel -->
+        <div id="settingsPanel" class="settings-panel hidden">
+            <div class="settings-header">
+                <h3>Settings</h3>
+                <button id="closeSettings" class="close-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="settings-content">
+                <div class="setting-group">
+                    <h4>Appearance</h4>
+                    <div class="setting-item">
+                        <label for="themeToggle">Dark Mode</label>
+                        <input type="checkbox" id="themeToggle" class="toggle">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <h4>Notifications</h4>
+                    <div class="setting-item">
+                        <label for="dailyReminder">Daily Reminder</label>
+                        <input type="checkbox" id="dailyReminder" class="toggle" checked>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <h4>Sounds</h4>
+                    <div class="setting-item">
+                        <label for="ambientSounds">Ambient Sounds</label>
+                        <select id="ambientSounds">
+                            <option value="none">None</option>
+                            <option value="rain">Rain</option>
+                            <option value="forest">Forest</option>
+                            <option value="waves">Ocean Waves</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <h4>Data</h4>
+                    <button id="exportData" class="secondary-btn">Export Data</button>
+                    <button id="resetData" class="danger-btn">Reset All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- What-If Scenario Modal -->
+    <div id="scenarioModal" class="modal hidden">
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>What-If Scenarios</h3>
+                    <button id="closeScenarioModal" class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="scenario-content">
+                    <div class="scenario-controls">
+                        <div class="control-group">
+                            <label for="consistencySlider">Consistency</label>
+                            <input type="range" id="consistencySlider" min="0" max="100" value="100" class="slider">
+                            <span id="consistencyValue">100%</span>
+                        </div>
+                        <div class="control-group">
+                            <label for="improvementSlider">Daily Improvement</label>
+                            <input type="range" id="improvementSlider" min="0" max="5" value="1" step="0.1" class="slider">
+                            <span id="improvementValue">1%</span>
+                        </div>
+                    </div>
+                    <div class="scenario-results">
+                        <div class="scenario-item">
+                            <span class="scenario-period">1 Year</span>
+                            <span class="scenario-growth" id="oneYearGrowth">+2,942%</span>
+                        </div>
+                        <div class="scenario-item">
+                            <span class="scenario-period">5 Years</span>
+                            <span class="scenario-growth" id="fiveYearGrowth">+145,673,061%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="modal hidden">
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Share Your Progress</h3>
+                    <button id="closeShareModal" class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="share-content">
+                    <div class="share-preview" id="sharePreview">
+                        <!-- Progress snapshot will be generated here -->
+                    </div>
+                    <div class="share-options">
+                        <button id="shareTwitter" class="share-btn twitter"><i class="fab fa-twitter"></i> Twitter</button>
+                        <button id="shareFacebook" class="share-btn facebook"><i class="fab fa-facebook"></i> Facebook</button>
+                        <button id="shareLinkedIn" class="share-btn linkedin"><i class="fab fa-linkedin"></i> LinkedIn</button>
+                        <button id="copyLink" class="share-btn copy"><i class="fas fa-link"></i> Copy Link</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Milestone Celebration Modal -->
+    <div id="celebrationModal" class="modal hidden">
+        <div class="modal-overlay">
+            <div class="modal-content celebration">
+                <div class="celebration-animation">
+                    <div class="fireworks"></div>
+                </div>
+                <div class="celebration-content">
+                    <h2>🎉 Milestone Achieved!</h2>
+                    <p id="celebrationMessage"></p>
+                    <button id="closeCelebration" class="primary-btn">Continue Journey</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievement Toast -->
+    <div id="achievementToast" class="toast hidden">
+        <div class="toast-content">
+            <div class="toast-icon">🎉</div>
+            <div class="toast-text">
+                <strong>Achievement Unlocked!</strong>
+                <span id="toastMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

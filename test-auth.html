@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Test - Daily 1%</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .google-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .google-btn:hover {
+            background: #357ae8;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Authentication Test Dashboard</h1>
+    
+    <div class="test-section">
+        <h2>📋 Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔑 Authentication Tests</h2>
+        <button class="test-button" onclick="testSupabaseConnection()">Test Supabase Connection</button>
+        <button class="test-button" onclick="testCurrentUser()">Test Current User</button>
+        <button class="test-button" onclick="testGoogleAuth()">Test Google Auth Setup</button>
+        <button class="test-button" onclick="testUserProfile()">Test User Profile Access</button>
+        <button class="test-button" onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🔐 Live Authentication</h2>
+        <p>Test actual authentication flows:</p>
+        <button class="google-btn" onclick="performGoogleAuth()">
+            <span>🔍</span> Sign in with Google
+        </button>
+        <br><br>
+        <input type="email" id="testEmail" placeholder="Test email" style="padding: 8px; margin: 5px;">
+        <input type="password" id="testPassword" placeholder="Test password" style="padding: 8px; margin: 5px;">
+        <button class="test-button" onclick="testEmailSignup()">Sign Up with Email</button>
+        <button class="test-button" onclick="testEmailSignin()">Sign In with Email</button>
+        <button class="test-button" onclick="testSignOut()">Sign Out</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Current Auth State</h2>
+        <div id="authState">
+            <div class="info">Loading auth state...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { authService, supabase } from './supabase.js';
+
+        // Global functions for testing
+        window.testSupabaseConnection = async function() {
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                if (error) {
+                    addResult('error', 'Supabase Connection Error: ' + error.message);
+                } else {
+                    addResult('success', 'Supabase connection successful!');
+                    addResult('info', 'Session data: ' + JSON.stringify(data, null, 2));
+                }
+            } catch (err) {
+                addResult('error', 'Connection exception: ' + err.message);
+            }
+        };
+
+        window.testCurrentUser = async function() {
+            try {
+                const { data: { user }, error } = await authService.getCurrentUser();
+                if (error) {
+                    addResult('error', 'Get current user error: ' + error.message);
+                } else if (user) {
+                    addResult('success', 'Current user found!');
+                    addResult('info', 'User data: ' + JSON.stringify(user, null, 2));
+                } else {
+                    addResult('info', 'No current user (not signed in)');
+                }
+            } catch (err) {
+                addResult('error', 'Current user exception: ' + err.message);
+            }
+        };
+
+        window.testGoogleAuth = async function() {
+            try {
+                // Test if Google OAuth is configured
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin + '/test-auth.html',
+                        skipBrowserRedirect: true
+                    }
+                });
+                
+                if (data.url) {
+                    addResult('success', 'Google OAuth is configured!');
+                    addResult('info', 'OAuth URL: ' + data.url);
+                } else if (error) {
+                    addResult('error', 'Google OAuth error: ' + error.message);
+                } else {
+                    addResult('info', 'Google OAuth test completed');
+                }
+            } catch (err) {
+                addResult('error', 'Google OAuth exception: ' + err.message);
+            }
+        };
+
+        window.testUserProfile = async function() {
+            try {
+                const { data: { user } } = await authService.getCurrentUser();
+                if (!user) {
+                    addResult('info', 'No user signed in - cannot test profile access');
+                    return;
+                }
+
+                // Test accessing users table
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        addResult('info', 'User profile not found (may need to be created)');
+                    } else {
+                        addResult('error', 'User profile access error: ' + error.message + ' (Code: ' + error.code + ')');
+                    }
+                } else {
+                    addResult('success', 'User profile access successful!');
+                    addResult('info', 'Profile data: ' + JSON.stringify(data, null, 2));
+                }
+            } catch (err) {
+                addResult('error', 'User profile exception: ' + err.message);
+            }
+        };
+
+        window.performGoogleAuth = async function() {
+            try {
+                addResult('info', 'Initiating Google OAuth...');
+                const { data, error } = await authService.signInWithGoogle();
+                if (error) {
+                    addResult('error', 'Google auth error: ' + error.message);
+                } else {
+                    addResult('success', 'Google OAuth initiated - redirecting...');
+                }
+            } catch (err) {
+                addResult('error', 'Google auth exception: ' + err.message);
+            }
+        };
+
+        window.testEmailSignup = async function() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            if (!email || !password) {
+                addResult('error', 'Please enter email and password');
+                return;
+            }
+
+            try {
+                addResult('info', 'Attempting signup...');
+                const { data, error } = await authService.signUp(email, password, email.split('@')[0]);
+                if (error) {
+                    addResult('error', 'Signup error: ' + error.message);
+                } else {
+                    addResult('success', 'Signup successful!');
+                    addResult('info', 'Signup data: ' + JSON.stringify(data, null, 2));
+                }
+            } catch (err) {
+                addResult('error', 'Signup exception: ' + err.message);
+            }
+        };
+
+        window.testEmailSignin = async function() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            if (!email || !password) {
+                addResult('error', 'Please enter email and password');
+                return;
+            }
+
+            try {
+                addResult('info', 'Attempting signin...');
+                const { data, error } = await authService.signIn(email, password);
+                if (error) {
+                    addResult('error', 'Signin error: ' + error.message);
+                } else {
+                    addResult('success', 'Signin successful!');
+                    addResult('info', 'Signin data: ' + JSON.stringify(data, null, 2));
+                }
+            } catch (err) {
+                addResult('error', 'Signin exception: ' + err.message);
+            }
+        };
+
+        window.testSignOut = async function() {
+            try {
+                addResult('info', 'Signing out...');
+                const { error } = await authService.signOut();
+                if (error) {
+                    addResult('error', 'Signout error: ' + error.message);
+                } else {
+                    addResult('success', 'Signout successful!');
+                }
+            } catch (err) {
+                addResult('error', 'Signout exception: ' + err.message);
+            }
+        };
+
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+        };
+
+        function addResult(type, message) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        // Monitor auth state changes
+        authService.onAuthStateChange((event, session) => {
+            const authStateDiv = document.getElementById('authState');
+            if (event === 'SIGNED_IN' && session?.user) {
+                authStateDiv.innerHTML = `
+                    <div class="success">
+                        <strong>✅ Signed In</strong><br>
+                        User: ${session.user.email}<br>
+                        ID: ${session.user.id}<br>
+                        Provider: ${session.user.app_metadata?.provider || 'email'}
+                    </div>
+                `;
+            } else if (event === 'SIGNED_OUT') {
+                authStateDiv.innerHTML = `
+                    <div class="info">
+                        <strong>🔓 Signed Out</strong><br>
+                        No active session
+                    </div>
+                `;
+            } else {
+                authStateDiv.innerHTML = `
+                    <div class="info">
+                        <strong>📊 Auth Event: ${event}</strong><br>
+                        ${session ? 'Session exists' : 'No session'}
+                    </div>
+                `;
+            }
+        });
+
+        // Initial state check
+        window.addEventListener('load', async () => {
+            addResult('info', 'Test dashboard loaded');
+            await testSupabaseConnection();
+            await testCurrentUser();
+        });
+    </script>
+</body>
+</html>

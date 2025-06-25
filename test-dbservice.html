@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dbService Test</title>
+</head>
+<body>
+    <h1>dbService Export Test</h1>
+    <div id="test-results"></div>
+    
+    <script type="module">
+        console.log('🧪 Testing dbService export...');
+        const results = document.getElementById('test-results');
+        
+        try {
+            console.log('Importing dbService from supabase.js...');
+            const { dbService } = await import('./supabase.js');
+            console.log('✅ dbService import successful');
+            console.log('dbService object:', dbService);
+            console.log('Available services:', Object.keys(dbService));
+            
+            results.innerHTML = `
+                <p style="color: green;">✅ dbService import successful!</p>
+                <p><strong>Available services:</strong> ${Object.keys(dbService).join(', ')}</p>
+            `;
+            
+        } catch (error) {
+            console.error('❌ dbService import error:', error);
+            results.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+        }
+    </script>
+</body>
+</html>

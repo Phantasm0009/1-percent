@@ -1,0 +1,60 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Daily 1% App",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"-m",
+				"http.server",
+				"3000"
+			],
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": [],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+		},
+		{
+			"label": "Start Daily 1% App (PowerShell)",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"Start-Process python -ArgumentList '-m', 'http.server', '3000' -NoNewWindow; Start-Sleep 2; Start-Process 'http://localhost:3000'"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new"
+			},
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+		},
+		{
+			"label": "Open in Browser",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"Start-Process 'http://localhost:3000'"
+			],
+			"group": "test",
+			"presentation": {
+				"echo": true,
+				"reveal": "silent"
+			}
+		}
+	]
+}
